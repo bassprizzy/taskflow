@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - main
-      - feature/docker-setup
 
 jobs:
   docker-build:
@@ -28,8 +27,16 @@ jobs:
       - name: Start application
         run: docker compose --env-file backend/.env up -d
 
-      - name: Wait for services to be healthy
-        run: |
-          docker compose --env-file backend/.env ps
+      - name: Check containers status
+        run:  docker compose --env-file backend/.env ps
+
+      - name: Test backend API
+        run:  curl --fail http://localhost:5000/ 
+      
+      - name: Test task API
+        run: curl --fail http://localhost:5000/tasks
+        
+      
+      
           
 
