@@ -38,6 +38,11 @@ jobs:
       
       - name: Test task API
         run: curl --fail http://localhost:5000/tasks
+
+      - name: Show backend logs if test fail
+        if: failure()
+        run: docker compose --env-file backend/.env logs backend postgres
+        
         
       
       
