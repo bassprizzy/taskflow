@@ -29,6 +29,9 @@ jobs:
 
       - name: Check containers status
         run:  docker compose --env-file backend/.env ps
+      
+      - name: Wait for backend 
+        run: sleep 30
 
       - name: Test backend API
         run:  curl --fail http://localhost:5000/ 
