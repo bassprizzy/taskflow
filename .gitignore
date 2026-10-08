@@ -3,3 +3,8 @@ node_modules/
 **/.env
 *.save
 *.swp
+*.tfvars
+*.tfvars.json
+.terraform/
+*.tfstate
+*.tfstate.*
