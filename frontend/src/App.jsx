@@ -5,7 +5,7 @@ function App() {
   const [title, setTitle] = useState("");
 
   const loadTasks = async () => {
-    const res = await fetch("http://localhost:5000/tasks");
+    const res = await fetch("/tasks");
     const data = await res.json();
     setTasks(data);
   };
@@ -17,7 +17,7 @@ function App() {
   const addTask = async () => {
     if (title.trim() === "") return;
 
-    await fetch("http://localhost:5000/tasks", {
+    await fetch("/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -29,7 +29,7 @@ function App() {
     loadTasks();
   };
 const completeTask = async (id) => {
-  await fetch(`http://localhost:5000/tasks/${id}`, {
+  await fetch(`/tasks/${id}`, {
     method: "PUT",
   });
 
@@ -37,7 +37,7 @@ const completeTask = async (id) => {
 };
 
 const deleteTask = async (id) => {
-  await fetch(`http://localhost:5000/tasks/${id}`, {
+  await fetch(`/tasks/${id}`, {
     method: "DELETE",
   });
 
