@@ -1,88 +1,82 @@
 name: TaskFlow CI
 
 on:
-pull_request:
-branches:
-- main
-push:
-branches:
-- main
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-terraform:
-name: Validate Terraform
-runs-on: ubuntu-latest
+  terraform:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Terraform
 
-```
-defaults:
-  run:
-    working-directory: Terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v6
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-  - name: Setup Terraform
-    uses: hashicorp/setup-terraform@v3
+      - name: Check formatting
+        run: terraform fmt -check -recursive
 
-  - name: Check formatting
-    run: terraform fmt -check -recursive
+      - name: Initialize Terraform
+        run: terraform init -backend=false
 
-  - name: Initialize Terraform
-    run: terraform init -backend=false
+      - name: Validate configuration
+        run: terraform validate
 
-  - name: Validate configuration
-    run: terraform validate
-```
+  docker-build:
+    name: Build and test application
+    runs-on: ubuntu-latest
 
-docker-build:
-name: Build and test application
-runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-```
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v6
+      - name: Create CI environment file
+        run: cp backend/.env.example backend/.env
 
-  - name: Create CI environment file
-    run: cp backend/.env.example backend/.env
+      - name: Build Docker images
+        run: docker compose --env-file backend/.env build
 
-  - name: Build Docker images
-    run: docker compose --env-file backend/.env build
+      - name: Start application
+        run: docker compose --env-file backend/.env up -d
 
-  - name: Start application
-    run: docker compose --env-file backend/.env up -d
+      - name: Check container status
+        run: docker compose --env-file backend/.env ps
 
-  - name: Check container status
-    run: docker compose --env-file backend/.env ps
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:5000/; then
+              echo "Backend is responding."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become ready."
+          exit 1
 
-  - name: Wait for backend
-    run: |
-      for i in $(seq 1 30); do
-        if curl --fail --silent http://localhost:5000/; then
-          echo "Backend is responding."
-          exit 0
-        fi
-        sleep 2
-      done
-      echo "Backend did not become ready."
-      exit 1
+      - name: Test tasks API
+        run: curl --fail http://localhost:5000/tasks
 
-  - name: Test tasks API
-    run: curl --fail http://localhost:5000/tasks
+      - name: Test frontend
+        run: curl --fail http://localhost:3000/
 
-  - name: Test frontend
-    run: curl --fail http://localhost:3000/
+      - name: Show logs if tests fail
+        if: failure()
+        run: docker compose --env-file backend/.env logs
 
-  - name: Show logs if tests fail
-    if: failure()
-    run: docker compose --env-file backend/.env logs
-
-  - name: Stop application
-    if: always()
-    run: docker compose --env-file backend/.env down -v
-```
-
+      - name: Stop application
+        if: always()
+        run: docker compose --env-file backend/.env down -v
